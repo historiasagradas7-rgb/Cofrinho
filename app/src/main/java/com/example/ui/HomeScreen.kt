@@ -1,21 +1,26 @@
 package com.example.ui
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +35,7 @@ import java.util.*
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
     val goals by viewModel.goals.collectAsStateWithLifecycle()
+    val summary by viewModel.monthlySummary.collectAsStateWithLifecycle()
     var showAddGoalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -78,6 +84,21 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    item {
+                        summary?.let {
+                            DashboardSection(it)
+                        }
+                    }
+
+                    item {
+                        Text(
+                            "Minhas Metas",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+
                     items(goals, key = { it.id }) { goal ->
                         GoalCard(
                             goal = goal,
@@ -329,6 +350,97 @@ fun AddSavingsDialog(onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
             }
         }
     )
+}
+
+@Composable
+fun DashboardSection(summary: SavingsViewModel.MonthlySummary) {
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("dashboard_card"),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Este Mês",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    currencyFormat.format(summary.totalSaved),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.TrendingUp,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        "Faltam ${currencyFormat.format(summary.remaining)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier.size(100.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressChart(
+                    progress = summary.progress,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Text(
+                    text = "${(summary.progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CircularProgressChart(progress: Float, modifier: Modifier = Modifier) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    
+    Canvas(modifier = modifier.padding(8.dp)) {
+        val strokeWidth = 12.dp.toPx()
+        
+        // Background track
+        drawCircle(
+            color = secondaryColor,
+            style = Stroke(width = strokeWidth)
+        )
+        
+        // Progress arc
+        drawArc(
+            color = primaryColor,
+            startAngle = -90f,
+            sweepAngle = 360f * progress,
+            useCenter = false,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+        )
+    }
 }
 
 fun getMonthName(month: Int): String {
