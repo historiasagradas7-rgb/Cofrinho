@@ -1,0 +1,6 @@
+{
+  "name": "Cofrinho Digital",
+  "description": "Um cofrinho digital para definir metas de economia mensais e acompanhar o progresso.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
